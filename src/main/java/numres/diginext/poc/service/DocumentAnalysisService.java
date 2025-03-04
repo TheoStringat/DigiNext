@@ -4,17 +4,20 @@ import lombok.RequiredArgsConstructor;
 import numres.diginext.poc.model.SystemMap;
 import numres.diginext.poc.model.SystemComponent;
 import numres.diginext.poc.model.ComponentRelationship;
-import numres.diginext.poc.service.ComponentExtractionService;
-import numres.diginext.poc.service.RelationshipExtractionService;
-import numres.diginext.poc.service.DiagramGenerationService;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,8 @@ public class DocumentAnalysisService {
 
     public SystemMap analyzeDocument(MultipartFile document, String documentName) throws IOException {
         String text = extractTextFromDocument(document);
+
+        System.out.println("Texte extrait :\n" + text);
 
         // Extraction des composants du SI
         Set<SystemComponent> components = componentExtractionService.extractComponents(text);
@@ -50,28 +55,44 @@ public class DocumentAnalysisService {
         return systemMap;
     }
 
+    /**
+     * Extrait le texte brut du document fourni.
+     */
     private String extractTextFromDocument(MultipartFile document) throws IOException {
-        // Logique d'extraction de texte selon le type de document
         String fileName = document.getOriginalFilename();
         if (fileName != null) {
-            if (fileName.endsWith(".pdf")) {
+            if (fileName.toLowerCase().endsWith(".pdf")) {
                 return extractTextFromPdf(document);
-            } else if (fileName.endsWith(".docx")) {
+            } else if (fileName.toLowerCase().endsWith(".docx")) {
                 return extractTextFromDocx(document);
             }
         }
         return new String(document.getBytes(), StandardCharsets.UTF_8);
     }
 
-    private String extractTextFromPdf(MultipartFile document) {
-        // Implémentation de l'extraction de texte à partir d'un PDF
-        // Utiliser une bibliothèque comme Apache PDFBox
-        return "Texte extrait du PDF"; // À implémenter
+    /**
+     * Extraction de texte depuis un PDF avec Apache PDFBox.
+     */
+    private String extractTextFromPdf(MultipartFile document) throws IOException {
+        try (InputStream inputStream = document.getInputStream();
+             PDDocument pdfDocument = PDDocument.load(inputStream)) {
+
+            PDFTextStripper pdfStripper = new PDFTextStripper();
+            return pdfStripper.getText(pdfDocument);
+        }
     }
 
-    private String extractTextFromDocx(MultipartFile document) {
-        // Implémentation de l'extraction de texte à partir d'un DOCX
-        // Utiliser une bibliothèque comme Apache POI
-        return "Texte extrait du DOCX"; // À implémenter
+    /**
+     * Extraction de texte depuis un DOCX avec Apache POI.
+     */
+    private String extractTextFromDocx(MultipartFile document) throws IOException {
+        try (InputStream inputStream = document.getInputStream();
+             XWPFDocument docxDocument = new XWPFDocument(inputStream)) {
+
+            List<XWPFParagraph> paragraphs = docxDocument.getParagraphs();
+            return paragraphs.stream()
+                    .map(XWPFParagraph::getText)
+                    .collect(Collectors.joining("\n"));
+        }
     }
 }
