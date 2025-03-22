@@ -92,9 +92,6 @@ public class DiagramGenerationService {
         plantUml.append("}\n\n");
     }
 
-    /**
-     * Définit les composants du système dans le diagramme
-     */
     private void defineComponents(SystemMap systemMap, StringBuilder plantUml, Map<SystemComponent, String> componentIds) {
         plantUml.append("' Définition des composants du système\n");
 
@@ -137,9 +134,28 @@ public class DiagramGenerationService {
         }
     }
 
-    /**
-     * Définit les relations entre les composants du système
-     */
+    private String getComponentStereotype(String type) {
+        switch (type.toUpperCase()) {
+            case "DATABASE":
+            case "BASE DE DONNÉES":
+                return "<<Base de données>>";
+            case "SERVER":
+            case "SERVEUR":
+                return "<<Serveur>>";
+            case "APPLICATION":
+            case "APP":
+                return "<<Application>>";
+            case "SAAS":
+                return "<<SaaS>>";
+            case "AGENT":
+                return "<<Agent>>";
+            case "TECHNOLOGY":
+                return "<<Technologie>>";
+            default:
+                return "<<Système>>";
+        }
+    }
+
     private void defineRelationships(SystemMap systemMap, StringBuilder plantUml, Map<SystemComponent, String> componentIds) {
         plantUml.append("' Définition des relations entre composants\n");
 
@@ -172,13 +188,26 @@ public class DiagramGenerationService {
         }
     }
 
-    /**
-     * Ajoute une légende au diagramme
-     */
     private void addLegend(StringBuilder plantUml) {
         plantUml.append("\nlegend right\n");
         plantUml.append("  Cartographie générée par DigiNext\n");
-        plantUml.append("  Date: ").append(java.time.LocalDate.now()).append("\n");
+        plantUml.append("  Date: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE)).append("\n");
         plantUml.append("endlegend\n\n");
+    }
+
+    public String generateSystemDiagram(SystemMap systemMap) {
+        StringBuilder plantUml = new StringBuilder();
+        plantUml.append("@startuml\n");
+        
+        configureSkinParams(plantUml);
+        
+        Map<SystemComponent, String> componentIds = new HashMap<>();
+        defineComponents(systemMap, plantUml, componentIds);
+        defineRelationships(systemMap, plantUml, componentIds);
+        
+        addLegend(plantUml);
+        
+        plantUml.append("@enduml");
+        return plantUml.toString();
     }
 }
