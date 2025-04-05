@@ -31,7 +31,7 @@ Cette Proof of Concept (POC) démontre la capacité de DigiNext à :
 
 ## 📦 Prérequis
 
-- Java 17 ou supérieur
+- Java 17
 - Maven 3.6 ou supérieur
 
 ## 🔧 Installation et démarrage
